@@ -1,0 +1,106 @@
+esphome:
+  name: black
+  platform: ESP32
+  board: esp32doit-devkit-v1
+
+  includes:
+    - uart_cc2530\src\zcl_mqtt_bridge.cpp
+    - uart_cc2530\src\zcl_mqtt_bridge.h
+
+wifi:
+  ssid: "XUrX"
+  password: "0102030507"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "black Fallback Hotspot"
+    password: "IZfU3iWy38T4"
+
+  use_address: 10.0.0.102
+
+captive_portal:
+
+# Enable logging
+logger:
+  # level: very_verbose
+  baud_rate: 115200
+
+# Enable Home Assistant API
+# api:
+
+ota:
+
+mqtt:
+  broker: 10.0.0.95
+  id: "mqttClient"
+  username: homeassistant
+  password: ood8buu3riHie1iivohB9theesheiZoayoghohsi3voosii5cai9iu8taeCealae
+
+  port: 1883
+
+  discovery : true
+  discovery_retain: true
+  
+  birth_message:
+    topic: 'homeassistant/status'
+    payload: 'online'
+  will_message:
+    topic: 'homeassistant/status'
+    payload: 'offline'
+  
+
+
+uart:
+  tx_pin: "GPIO17" 
+  rx_pin: "GPIO16" 
+  baud_rate: 115200
+  id: "cc2530_UART"
+  
+custom_component:
+- lambda: |-
+    auto my_custom = new zcl_mqtt::zcl_mqtt_bridge(id(cc2530_UART));
+    App.register_component(my_custom);
+    return {my_custom};
+
+
+binary_sensor:
+ 
+  - platform: gpio
+    name: " UTIL_GET_NV_INFO"
+    pin:
+      number: 23
+      inverted: True
+      mode: INPUT_PULLUP
+
+    on_click:
+      - logger.log:  UTIL_GET_NV_INFO
+      - uart.write:
+          id: "cc2530_UART"
+          data: [0xfe, 0x00, 0x27, 0x01, 0x26]
+
+
+switch:
+  - platform: gpio 
+    name: "PermitJoiningReq"
+    pin:
+      number: 12
+      inverted: yes
+
+    on_turn_on :
+      - logger.log: join-29
+      - uart.write:
+          id: "cc2530_UART"
+          data: [0xFE,0x03,0x26,0x08,0xFC,0xFF,0x1d,0x33]
+    on_turn_off:
+      - logger.log: join-0
+      - uart.write:
+          id: "cc2530_UART"
+          data: [0xFE,0x03,0x26,0x08,0xFC,0xFF,0x00,0x2E]
+
+
+
+
+#SOP, LEN, CMD,DATA,FCS
+# 1,2,1,x,1
+# FCS = XOR cmd,len,DATA
+
