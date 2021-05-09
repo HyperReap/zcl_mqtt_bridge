@@ -120,7 +120,7 @@ namespace esphome
                 * starting from position 1, because XOR is counted from LEN to last DATA
                 * 0 - 0xFE, 1 - LEN,  ending at end of cmd - cmd does not have FCS yet
             */
-            static uint8_t CountFCS(std::vector<uint8_t> cmd)
+            static uint8_t count_fcs(std::vector<uint8_t> cmd)
             {
                 uint8_t fcs = 0x0;
                 for (short i = 1; i < cmd.size(); i++)
@@ -133,69 +133,69 @@ namespace esphome
             /*
             * @brief gets HASS name of component based on Cluster Id in C string fromat
             */
-            static void GetComponentName(std::string modelName, std::string componentName, std::string devClass)
+            static void get_component_name(std::string model_name, std::string component_name, std::string device_class)
             {
-                devClass = "";
-                componentName = "";
-                if (modelName.find("plug") != std::string::npos) //aqara smart plug
+                device_class = "";
+                component_name = "";
+                if (model_name.find("plug") != std::string::npos) //aqara smart plug
                 {
-                    componentName = "switch";
+                    component_name = "switch";
                 }
-                else if (modelName.find("light") != std::string::npos) //aqara light .compare("lumi.light.aqcn02")
+                else if (model_name.find("light") != std::string::npos) //aqara light .compare("lumi.light.aqcn02")
                 {
-                    componentName = "light";
+                    component_name = "light";
                 }
-                else if (modelName.find("cube") != std::string::npos) //aqara cube .compare("lumi.sensor_cube.aqgl01")
+                else if (model_name.find("cube") != std::string::npos) //aqara cube .compare("lumi.sensor_cube.aqgl01")
                 {
-                    componentName = "switch";
+                    component_name = "switch";
                 }
-                else if (modelName.find("remote") != std::string::npos) //switch .compare("lumi.remote.b186acn01")
+                else if (model_name.find("remote") != std::string::npos) //switch .compare("lumi.remote.b186acn01")
                 {
-                    componentName = "switch";
+                    component_name = "switch";
                 }
-                // else if (modelName.compare("lumi.remote.b286acn01"))//switch
+                // else if (model_name.compare("lumi.remote.b286acn01"))//switch
                 // {
-                //     componentName = "switch";
+                //     component_name = "switch";
                 // }
-                else if (modelName.find("switch") != std::string::npos) //switch .compare("lumi.sensor_switch.aq2")
+                else if (model_name.find("switch") != std::string::npos) //switch .compare("lumi.sensor_switch.aq2")
                 {
-                    componentName = "switch";
+                    component_name = "switch";
                 }
-                else if (modelName.find("sensor") != std::string::npos) //sesor
+                else if (model_name.find("sensor") != std::string::npos) //sesor
                 {
-                    componentName = "binary_sensor";
+                    component_name = "binary_sensor";
 
-                    if (modelName.find("sensor_motion") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
+                    if (model_name.find("sensor_motion") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
                     {
-                        devClass = "motion";
+                        device_class = "motion";
                     }
-                    else if (modelName.find("sensor_wleak") != std::string::npos) //leak sensor
+                    else if (model_name.find("sensor_wleak") != std::string::npos) //leak sensor
                     {
-                        devClass = "moisture";
+                        device_class = "moisture";
                     }
 
-                    else if (modelName.find("door") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
+                    else if (model_name.find("door") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
                     {
-                        devClass = "door";
+                        device_class = "door";
                     }
                 }
 
-                else if (modelName.find("vibration") != std::string::npos) //vibration sensor .compare("lumi.vibration.aq1")
+                else if (model_name.find("vibration") != std::string::npos) //vibration sensor .compare("lumi.vibration.aq1")
                 {
-                    componentName = "binary_sensor";
-                    devClass = "vibration";
+                    component_name = "binary_sensor";
+                    device_class = "vibration";
                 }
 
-                else if (modelName.find("door") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
+                else if (model_name.find("door") != std::string::npos) //motion sensor .compare("lumi.sensor_motion")
                 {
-                    componentName = "binary_sensor";
-                    devClass = "door";
+                    component_name = "binary_sensor";
+                    device_class = "door";
                 }
 
-                else if (modelName.find("weather") != std::string::npos) //weather sensor    .compare("lumi.weather")
+                else if (model_name.find("weather") != std::string::npos) //weather sensor    .compare("lumi.weather")
                 {
-                    componentName = "sensor";
-                    devClass = "weather";
+                    component_name = "sensor";
+                    device_class = "weather";
                 }
             }
         };
@@ -225,7 +225,7 @@ namespace esphome
         {
         public:
             ZCLHelper::ClusterIds id; //2 bytes
-            std::string srcAddress;   //2bytes
+            std::string src_address;   //2bytes
             vector<Attribute> attributes;
             vector<Command> commands;
             std::string name;
@@ -251,65 +251,65 @@ provision for retransmission of
         private:
         public:
             /*0xFE, LEN, CMD ID0, CMD ID1, PAYLOAD, FCS */
-            std::vector<uint8_t> Command;
-            int CommandLength;
-            std::vector<uint8_t> ExpectedResponse;
-            int ResponseLength;
+            std::vector<uint8_t> command;
+            int command_length;
+            std::vector<uint8_t> expected_response;
+            int response_length;
 
             ZNPCommand(/* args */) {}
-            ZNPCommand(std::vector<uint8_t> fullCommand, int commandLength, std::vector<uint8_t> expectedResponse, int responseLength)
+            ZNPCommand(std::vector<uint8_t> full_cmd, int cmd_len, std::vector<uint8_t> exp_rsp, int rsp_len)
             {
-                this->Command = fullCommand;
-                this->CommandLength = commandLength;
-                this->ExpectedResponse = expectedResponse;
-                this->ResponseLength = responseLength;
+                this->command = full_cmd;
+                this->command_length = cmd_len;
+                this->expected_response = exp_rsp;
+                this->response_length = rsp_len;
             }
             ~ZNPCommand() {}
         };
 
         struct Endpoint
         {
-            int EndpointId;
-            int ProfileId;
+            int endpoint_id;
+            int profile_id;
             int AppDeviceId;
-            int AppDevVer;
-            int NumInClusters;
+            int App_dev_version;
+            int number_inclusters;
             /// 2 bytes make single cluster
-            std::vector<uint8_t> InClusterList;
-            int NumOutClusters;
+            std::vector<uint8_t> incluster_list;
+            int num_outclusters;
             /// 2 bytes make single cluster
-            std::vector<uint8_t> OutClusterList;
-            int LatencyReq;
+            std::vector<uint8_t> outcluster_list;
+            int latency_required;
 
             /*
       basic endpoint with default values
       */
             Endpoint(int endpointId, int profileId)
             {
-                EndpointId = endpointId;
-                ProfileId = profileId;
+                endpoint_id = endpointId;
+                profile_id = profileId;
                 AppDeviceId = 0x0005;
-                AppDevVer = 0;
-                NumInClusters = 0;
-                NumOutClusters = 0;
-                LatencyReq = 0; //NoLattencyReq
+                App_dev_version = 0;
+                number_inclusters = 0;
+                num_outclusters = 0;
+                latency_required = 0; //NoLattencyReq
             }
         };
 
-        class zcl_mqtt_bridge : public Component, public uart::UARTDevice, public mqtt::CustomMQTTDevice
+        class ZclMqttBridge : public Component, public uart::UARTDevice, public mqtt::CustomMQTTDevice
         {
         public:
-            zcl_mqtt_bridge(uart::UARTComponent *parent)
+            ZclMqttBridge(uart::UARTComponent *parent)
             {
                 set_uart_parent(parent);
                 set_setup_priority(setup_priority::LATE);
             }
-            ~zcl_mqtt_bridge() {}
+            ~ZclMqttBridge() {}
 
             void setup() override
             {
 
-                ESP_LOGI("zcl_mqtt_bridge", "Setup of zcl_mqtt_bridge", "");
+                ESP_LOGI("ZclMqttBridge", "Setup of ZclMqttBridge", "");
                 this->transaction_number = 1; //first transaction
 
                 while (millis() < 7500) //time for letting cc2530 init
@@ -340,16 +340,16 @@ provision for retransmission of
 
             void send_cmd_and_wait_for_response(ZNPCommand cmd, std::vector<uint8_t> response);
             bool write_command(std::vector<uint8_t> cmd, int length);
-            bool receive_response(std::vector<uint8_t> expectedResponse, int expectedLength);
+            bool receive_response(std::vector<uint8_t> expected_response, int expected_length);
 
             bool check_leave_device(std::vector<uint8_t> response);
             bool check_join_device(std::vector<uint8_t> response);
             bool check_AF_INCOMING(std::vector<uint8_t> response);
             void check_ZCL_cmd(ZCluster *cluster, std::vector<uint8_t> response);
 
-            bool send_AF_DATA_REQUEST(string dstAddr, int clusterId, uint8_t transNumber, uint8_t action = 0x0, uint8_t brightness = 0x0, int color_temp = 0);
+            bool send_AF_DATA_REQUEST(string dst_address, int cluster_id, uint8_t trans_number, uint8_t action = 0x0, uint8_t brightness = 0x0, int color_temp = 0);
 
-            void publish_component_config(std::string modelName, std::string srcAddress);
+            void publish_component_config(std::string model_name, std::string src_address);
             void on_json_message(const std::string &topic, JsonObject &payload);
             void on_message(const std::string &topic, const std::string &payload);
         };
