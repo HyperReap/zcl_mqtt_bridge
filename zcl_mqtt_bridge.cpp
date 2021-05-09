@@ -5,19 +5,19 @@ namespace esphome
   namespace zcl_mqtt
   {
     const char *TAG = "uart_CC2530";
-    const char *MQTT_Receive_TAG = "MQTT_uart_CC2530";
-    const char *UART_Receive_TAG = "CC2530 - received";
-    const char *UART_Write_TAG = "CC2530 - write";
-    const char *BOOT_Commands_TAG = "BOOT Commands";
-    const char *INIT_Commands_TAG = "INIT Commands";
-    const char *DEVICE_Join_TAG = "INIT Commands";
-    const char *DEVICE_Leave_TAG = "INIT Commands";
+    const char *MQTT_RECEIVE_TAG = "MQTT_uart_CC2530";
+    const char *UART_RECEIVE_TAG = "CC2530 - received";
+    const char *UART_WRITE_TAG = "CC2530 - write";
+    const char *BOOT_COMMANDS_TAG = "BOOT Commands";
+    const char *INIT_COMMANDS_TAG = "INIT Commands";
+    const char *DEVICE_JOIN_TAG = "INIT Commands";
+    const char *DEVICE_LEAVE_TAG = "INIT Commands";
     const unsigned CMD0_POS = 2;
     const unsigned CMD1_POS = 2;
     const unsigned DELAY = 500000;
 
 
-    void zcl_mqtt_bridge::on_message(const std::string &topic, const std::string &payload)
+    void ZclMqttBridge::on_message(const std::string &topic, const std::string &payload)
     {
 
       auto pos_2nd_backslash = topic.find_first_of('/', 14);
@@ -35,9 +35,9 @@ namespace esphome
       bool isOk = send_AF_DATA_REQUEST(dst, cluster_id, this->transaction_number, cmd);
     }
 
-    void zcl_mqtt_bridge::on_json_message(const std::string &topic, JsonObject &payload)
+    void ZclMqttBridge::on_json_message(const std::string &topic, JsonObject &payload)
     {
-      ESP_LOGD(MQTT_Receive_TAG, "Got to MQTT message: JSON");
+      ESP_LOGD(MQTT_RECEIVE_TAG, "Got to MQTT message: JSON");
       auto pos_2nd_backslash = topic.find_first_of('/', 14);
       pos_2nd_backslash + this->application_name.length();
       std::string dst = topic.substr(++pos_2nd_backslash, 4);
@@ -68,7 +68,7 @@ namespace esphome
       send_AF_DATA_REQUEST(dst, cluster_id, this->transaction_number, cmd, brightness, clr);
     }
 
-    void zcl_mqtt_bridge::receive()
+    void ZclMqttBridge::receive()
     {
       uint8_t byte;
       std::vector<uint8_t> response;
@@ -85,7 +85,7 @@ namespace esphome
       for (auto i : response)
         resp.append(ZCLHelper::n2hexstr(i));
 
-      ESP_LOGD(UART_Receive_TAG, "received bytes : 0x%s", resp.c_str());
+      ESP_LOGD(UART_RECEIVE_TAG, "received bytes : 0x%s", resp.c_str());
 
       if (check_AF_INCOMING(response)) //most common incoming messages so its first for optimalization
         return; 
@@ -95,20 +95,20 @@ namespace esphome
         return;
     }
 
-    void zcl_mqtt_bridge::boot()
+    void ZclMqttBridge::boot()
     {
       std::vector<uint8_t> response;
 
       ZNPCommand bdbTCRequireKeyExchange({0xFE, 0x01, 0x2F, 0x09, 0x00, 0x27}, 6, {0xfe, 0x01, 0x6f, 0x09, 0x00, 0x67}, 6);
 
-      ESP_LOGD(BOOT_Commands_TAG, "BDB NOT-RequireTCKeyExchange");
+      ESP_LOGD(BOOT_COMMANDS_TAG, "BDB NOT-RequireTCKeyExchange");
       send_cmd_and_wait_for_response(bdbTCRequireKeyExchange, response);
 
-      ESP_LOGD(BOOT_Commands_TAG, "ZDO startUpFromApp");
+      ESP_LOGD(BOOT_COMMANDS_TAG, "ZDO startUpFromApp");
       ZNPCommand startUpFromApp({0xFE, 0x01, 0x25, 0x40, 0x00, 0x64}, 6, {0xfe, 0x01, 0x65, 0x40, 0x00, 0x24}, 6);
       send_cmd_and_wait_for_response(startUpFromApp, response);
 
-      ESP_LOGD(BOOT_Commands_TAG, "Not permit Join");
+      ESP_LOGD(BOOT_COMMANDS_TAG, "Not permit Join");
       ZNPCommand notPermitJoin({0xFE, 0x03, 0x26, 0x08, 0xFC, 0xFF, 0x00, 0x2E}, 8, {0xFE, 0x01, 0x66, 0x08, 0x00, 0x6F}, 6);
       send_cmd_and_wait_for_response(notPermitJoin, response);
 
@@ -128,49 +128,49 @@ namespace esphome
 
       // Endpoint bonus1(11, 0x104);
       // bonus1.AppDeviceId = 0x0400;
-      // bonus1.NumOutClusters = 2;
-      // bonus1.OutClusterList = {0x0, 0x0, 0x0, 0x0}; //todo ssiasZone ssiasWD
-      // bonus1.NumInClusters = 1;
-      // bonus1.InClusterList = {0x0, 0x0}; // todo ssiasAce
+      // bonus1.num_outclusters = 2;
+      // bonus1.outcluster_list = {0x0, 0x0, 0x0, 0x0}; //todo ssiasZone ssiasWD
+      // bonus1.number_inclusters = 1;
+      // bonus1.incluster_list = {0x0, 0x0}; // todo ssiasAce
 
       // Endpoint bonus2(13, 0x104);
-      // bonus2.NumInClusters = 1;
-      // bonus2.InClusterList = {0x0}; //TODO genOTA
+      // bonus2.number_inclusters = 1;
+      // bonus2.incluster_list = {0x0}; //TODO genOTA
 
       // endpoints.push_back(bonus1);
       // endpoints.push_back(bonus2);
 
-      ESP_LOGD(BOOT_Commands_TAG, "Registering Endpoints");
+      ESP_LOGD(BOOT_COMMANDS_TAG, "Registering Endpoints");
       for (auto ep : endpoints)
       {
         uint8_t fcs = 0x0;
 
-        auto profile = static_cast<uint8_t *>(static_cast<void *>(&ep.ProfileId));
+        auto profile = static_cast<uint8_t *>(static_cast<void *>(&ep.profile_id));
         auto device = static_cast<uint8_t *>(static_cast<void *>(&ep.AppDeviceId));
-        uint8_t len = 9 + ep.NumInClusters + ep.NumOutClusters;
+        uint8_t len = 9 + ep.number_inclusters + ep.num_outclusters;
 
         std::vector<uint8_t> cmd = {
             0xfe,
             static_cast<uint8_t>(len),
             0x24, //cmd0
             0x00, //cmd1
-            static_cast<uint8_t>(ep.EndpointId),
+            static_cast<uint8_t>(ep.endpoint_id),
             profile[0],
             profile[1],
             device[0],
             device[1],
-            static_cast<uint8_t>(ep.AppDevVer),
-            static_cast<uint8_t>(ep.LatencyReq),
+            static_cast<uint8_t>(ep.App_dev_version),
+            static_cast<uint8_t>(ep.latency_required),
         };
-        cmd.push_back(static_cast<uint8_t>(ep.NumInClusters));
-        for (auto cluster : ep.InClusterList)
+        cmd.push_back(static_cast<uint8_t>(ep.number_inclusters));
+        for (auto cluster : ep.incluster_list)
           cmd.push_back(cluster);
 
-        cmd.push_back(static_cast<uint8_t>(ep.NumOutClusters));
-        for (auto cluster : ep.OutClusterList)
+        cmd.push_back(static_cast<uint8_t>(ep.num_outclusters));
+        for (auto cluster : ep.outcluster_list)
           cmd.push_back(cluster);
 
-        fcs = ZCLHelper::CountFCS(cmd);
+        fcs = ZCLHelper::count_fcs(cmd);
         // for (short i = 1; i < len; i++)
         // {
         //   fcs = fcs ^ cmd[i];
@@ -183,7 +183,7 @@ namespace esphome
       }
     }
 
-    void zcl_mqtt_bridge::zcl_mqtt_bridge_init()
+    void ZclMqttBridge::zcl_mqtt_bridge_init()
     {
 
       // 39 30 65 63 6e 61 69 6c 6c 41 65 65 42 67 69 5a
@@ -200,7 +200,7 @@ namespace esphome
 
       //check GET_NV_INFo if key is the same as NwkKey, if so, skip init
       ZNPCommand getNVInfo({0xfe, 0x00, 0x27, 0x01, 0x26}, 5, {}, 0);
-      write_command(getNVInfo.Command, getNVInfo.CommandLength);
+      write_command(getNVInfo.command, getNVInfo.command_length);
       delayMicroseconds(DELAY * 10);
 
       uint8_t byte;
@@ -213,7 +213,7 @@ namespace esphome
       std::vector<uint8_t> keyFromNvInfo(response.begin() + 20, response.end() - 1);
       if (keyFromNvInfo == Nwkkey)
       {
-        ESP_LOGD(INIT_Commands_TAG, "Key are equal");
+        ESP_LOGD(INIT_COMMANDS_TAG, "Key are equal");
         return;
       }
 
@@ -236,54 +236,54 @@ namespace esphome
       ZNPCommand bdbStartCommissioning2({0xFE, 0x01, 0x2F, 0x05, 0x02, 0x29}, 6, {0xfe, 0x01, 0x6f, 0x05, 0x00, 0x6b}, 6);
 
       //TC link key should be ok with ZNP 3.x.x version - should be 'ZigBeeAlliance09'
-      ESP_LOGD(INIT_Commands_TAG, "reset-Soft");
+      ESP_LOGD(INIT_COMMANDS_TAG, "reset-Soft");
       send_cmd_and_wait_for_response(reset, response);
-      // ESP_LOGD(INIT_Commands_TAG, "StartUp Option delete NV");
+      // ESP_LOGD(INIT_COMMANDS_TAG, "StartUp Option delete NV");
       // send_cmd_and_wait_for_response(confStartUpDeleteNVOpt, response);
-      ESP_LOGD(INIT_Commands_TAG, "StartUp Option");
+      ESP_LOGD(INIT_COMMANDS_TAG, "StartUp Option");
       send_cmd_and_wait_for_response(confStartUpOpt, response);
-      ESP_LOGD(INIT_Commands_TAG, "reset-Soft");
+      ESP_LOGD(INIT_COMMANDS_TAG, "reset-Soft");
       send_cmd_and_wait_for_response(reset, response);
-      ESP_LOGD(INIT_Commands_TAG, "LogType");
+      ESP_LOGD(INIT_COMMANDS_TAG, "LogType");
       send_cmd_and_wait_for_response(confLogType, response);
-      ESP_LOGD(INIT_Commands_TAG, "NWK Key distrib");
+      ESP_LOGD(INIT_COMMANDS_TAG, "NWK Key distrib");
       send_cmd_and_wait_for_response(confNwkKeyDistrib, response);
-      ESP_LOGD(INIT_Commands_TAG, "Direct CB");
+      ESP_LOGD(INIT_COMMANDS_TAG, "Direct CB");
       send_cmd_and_wait_for_response(confDirectCB, response);
-      ESP_LOGD(INIT_Commands_TAG, "Config Channel");
+      ESP_LOGD(INIT_COMMANDS_TAG, "Config Channel");
       // send_cmd_and_wait_for_response(confChannel, response);
-      ESP_LOGD(INIT_Commands_TAG, "Config PanId");
+      ESP_LOGD(INIT_COMMANDS_TAG, "Config PanId");
       send_cmd_and_wait_for_response(confPanId, response);
-      ESP_LOGD(INIT_Commands_TAG, "Config Extended PanId");
+      ESP_LOGD(INIT_COMMANDS_TAG, "Config Extended PanId");
       send_cmd_and_wait_for_response(extConfPanId, response);
-      ESP_LOGD(INIT_Commands_TAG, "Config Nwk Key");
+      ESP_LOGD(INIT_COMMANDS_TAG, "Config Nwk Key");
       send_cmd_and_wait_for_response(confNwkKey, response);
 
-      ESP_LOGD(INIT_Commands_TAG, "BDB primaryChannel");
+      ESP_LOGD(INIT_COMMANDS_TAG, "BDB primaryChannel");
       send_cmd_and_wait_for_response(bdbSetChannelPrimary, response);
-      ESP_LOGD(INIT_Commands_TAG, "BDB non-primaryChannel");
+      ESP_LOGD(INIT_COMMANDS_TAG, "BDB non-primaryChannel");
       send_cmd_and_wait_for_response(bdbSetChannelNonPrimary, response);
 
-      ESP_LOGD(INIT_Commands_TAG, "BDB startCommissioning 0x04");
+      ESP_LOGD(INIT_COMMANDS_TAG, "BDB startCommissioning 0x04");
       send_cmd_and_wait_for_response(bdbStartCommissioning4, response);
       delayMicroseconds(DELAY);
       receive();
-      ESP_LOGD(INIT_Commands_TAG, "BDB startCommissioning 0x02");
+      ESP_LOGD(INIT_COMMANDS_TAG, "BDB startCommissioning 0x02");
       send_cmd_and_wait_for_response(bdbStartCommissioning2, response);
     }
 
-    void zcl_mqtt_bridge::send_cmd_and_wait_for_response(ZNPCommand cmd, std::vector<uint8_t> response)
+    void ZclMqttBridge::send_cmd_and_wait_for_response(ZNPCommand cmd, std::vector<uint8_t> response)
     {
-      bool waitForResponse = write_command(cmd.Command, cmd.CommandLength);
+      bool waitForResponse = write_command(cmd.command, cmd.command_length);
       delayMicroseconds(DELAY);
 
       while (waitForResponse)
       {
-        waitForResponse = receive_response(response, cmd.ResponseLength);
+        waitForResponse = receive_response(response, cmd.response_length);
       }
     }
 
-    bool zcl_mqtt_bridge::write_command(std::vector<uint8_t> cmd, int length)
+    bool ZclMqttBridge::write_command(std::vector<uint8_t> cmd, int length)
     {
       bool waitForResponse = true;
       if (!cmd.empty())
@@ -292,7 +292,7 @@ namespace esphome
         for (auto i : cmd)
           r.append(ZCLHelper::n2hexstr(i));
 
-        ESP_LOGD(UART_Write_TAG, "write : 0x%s", r.c_str());
+        ESP_LOGD(UART_WRITE_TAG, "write : 0x%s", r.c_str());
       }
 
       this->write_array(&cmd[0], sizeof(uint8_t) * length);
@@ -300,7 +300,7 @@ namespace esphome
     }
 
     //TODO::
-    bool zcl_mqtt_bridge::receive_response(std::vector<uint8_t> expectedResponse, int length)
+    bool ZclMqttBridge::receive_response(std::vector<uint8_t> expectedResponse, int length)
     {
       bool waitForResponse = false;
       receive();
@@ -308,13 +308,13 @@ namespace esphome
       return waitForResponse;
       // while (available())
       // {
-      //   ESP_LOGI(UART_Receive_TAG, "RESPONSE");
+      //   ESP_LOGI(UART_RECEIVE_TAG, "RESPONSE");
       //   this->read_array(&expectedResponse[0], sizeof(uint8_t) * length);
       //   return false; //no nned to wait anymore
       // }
     }
 
-    bool zcl_mqtt_bridge::check_join_device(std::vector<uint8_t> response)
+    bool ZclMqttBridge::check_join_device(std::vector<uint8_t> response)
     {
 
       if (response.size() == 16) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0B), FCS
@@ -323,12 +323,12 @@ namespace esphome
         {
           std::__cxx11::string nwkAddress = to_string(response[5]); //MSB
           nwkAddress += to_string(response[4]);
-          ESP_LOGD(DEVICE_Join_TAG, "new Device address: %s", nwkAddress.c_str());
+          ESP_LOGD(DEVICE_JOIN_TAG, "new Device address: %s", nwkAddress.c_str());
         }
       }
     }
 
-    bool zcl_mqtt_bridge::check_leave_device(std::vector<uint8_t> response)
+    bool ZclMqttBridge::check_leave_device(std::vector<uint8_t> response)
     {
       if (response.size() == 18) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0D), FCS
       {
@@ -336,7 +336,7 @@ namespace esphome
         {
           std::__cxx11::string nwkAddress = ZCLHelper::n2hexstr(response[5]); //MSB
           nwkAddress += ZCLHelper::n2hexstr(response[4]);
-          ESP_LOGD(DEVICE_Leave_TAG, "LEAVE - Device address: %s", nwkAddress.c_str());
+          ESP_LOGD(DEVICE_LEAVE_TAG, "LEAVE - Device address: %s", nwkAddress.c_str());
 
           //TODO LifeHack - needs better solution
           this->publish("homeassistant/switch/" + App.get_name() + nwkAddress + "/config", "");
@@ -349,7 +349,7 @@ namespace esphome
       }
     }
 
-    bool zcl_mqtt_bridge::check_AF_INCOMING(std::vector<uint8_t> response)
+    bool ZclMqttBridge::check_AF_INCOMING(std::vector<uint8_t> response)
     {
       ZCluster zcl;
 
@@ -362,8 +362,8 @@ namespace esphome
 
       if (a0.id == ZCLHelper::Attributes::model_identifier && zcl.id == ZCLHelper::ClusterIds::basic)
       {
-        ESP_LOGD(MQTT_Receive_TAG, "model identifier");
-        publish_component_config(a0.value, this->application_name + zcl.srcAddress);
+        ESP_LOGD(MQTT_RECEIVE_TAG, "model identifier");
+        publish_component_config(a0.value, this->application_name + zcl.src_address);
         return true;
       }
 
@@ -379,7 +379,7 @@ namespace esphome
           state = "ON";
 
         this->publish_json(
-            "homeassistant/binary_sensor/" + this->application_name + zcl.srcAddress + "/state",
+            "homeassistant/binary_sensor/" + this->application_name + zcl.src_address + "/state",
             [=](JsonObject &r) {
               r["state"] = state;
             },
@@ -397,7 +397,7 @@ namespace esphome
           set = "OFF"; //double click
         else if (val == 0)
           set = "OFF"; //long click
-        this->publish("homeassistant/switch/" + this->application_name + zcl.srcAddress + "/set", set, 0, true);
+        this->publish("homeassistant/switch/" + this->application_name + zcl.src_address + "/set", set, 0, true);
 
         return true;
       }
@@ -411,7 +411,7 @@ namespace esphome
           state = "ON";
 
         this->publish_json(
-            "homeassistant/binary_sensor/" + this->application_name + zcl.srcAddress + "/state",
+            "homeassistant/binary_sensor/" + this->application_name + zcl.src_address + "/state",
             [=](JsonObject &r) {
               r["state"] = state;
             },
@@ -430,19 +430,19 @@ namespace esphome
           value = "OFF";
 
         this->publish_json(
-            "homeassistant/light/" + this->application_name + zcl.srcAddress + "/state",
+            "homeassistant/light/" + this->application_name + zcl.src_address + "/state",
             [=](JsonObject &r) {
               r["state"] = value;
             },
             0, true);
         this->publish_json(
-            "homeassistant/switch/" + this->application_name + zcl.srcAddress + "/state",
+            "homeassistant/switch/" + this->application_name + zcl.src_address + "/state",
             [=](JsonObject &r) {
               r["state"] = value;
             },
             0, true);
         this->publish_json(
-            "homeassistant/binary_sensor/" + this->application_name + zcl.srcAddress + "/state",
+            "homeassistant/binary_sensor/" + this->application_name + zcl.src_address + "/state",
             [=](JsonObject &r) {
               r["state"] = value;
             },
@@ -460,7 +460,7 @@ namespace esphome
         value.insert(2, 1, ',');
 
         this->publish_json(
-            "homeassistant/sensor/" + this->application_name + zcl.srcAddress + "p/state",
+            "homeassistant/sensor/" + this->application_name + zcl.src_address + "p/state",
             [=](JsonObject &r) {
               r["pressure"] = value;
             },
@@ -476,7 +476,7 @@ namespace esphome
         value.insert(2, 1, ',');
 
         this->publish_json(
-            "homeassistant/sensor/" + this->application_name + zcl.srcAddress + "h/state",
+            "homeassistant/sensor/" + this->application_name + zcl.src_address + "h/state",
             [=](JsonObject &r) {
               r["humidity"] = value;
             },
@@ -491,7 +491,7 @@ namespace esphome
         value.insert(2, 1, ',');
 
         this->publish_json(
-            "homeassistant/sensor/" + this->application_name + zcl.srcAddress + "t/state",
+            "homeassistant/sensor/" + this->application_name + zcl.src_address + "t/state",
             [=](JsonObject &r) {
               r["temperature"] = value;
             },
@@ -503,7 +503,7 @@ namespace esphome
       return false;
     }
 
-    bool zcl_mqtt_bridge::send_AF_DATA_REQUEST(string dstAddr, int clusterId, uint8_t transNumber, uint8_t action, uint8_t brightness, int color_temp)
+    bool ZclMqttBridge::send_AF_DATA_REQUEST(string dstAddr, int clusterId, uint8_t transNumber, uint8_t action, uint8_t brightness, int color_temp)
     {
 
       this->transaction_number++;
@@ -524,7 +524,7 @@ namespace esphome
       ulong addr = std::strtoul(dstAddr.c_str(), nullptr, 16);
       lsb = addr;
       msb = addr >> 8;
-      ESP_LOGD(MQTT_Receive_TAG, "addr LSB: %02x MSB: %02x ", lsb, msb);
+      ESP_LOGD(MQTT_RECEIVE_TAG, "addr LSB: %02x MSB: %02x ", lsb, msb);
       cmd.push_back(lsb);
       cmd.push_back(msb);
       cmd.push_back(1); //dst Endpoint
@@ -534,7 +534,7 @@ namespace esphome
       lsb = cl;
       msb = cl >> 8;
 
-      ESP_LOGD(MQTT_Receive_TAG, "cluster LSB: %02x MSB: %02x ", lsb, msb);
+      ESP_LOGD(MQTT_RECEIVE_TAG, "cluster LSB: %02x MSB: %02x ", lsb, msb);
       cmd.push_back(lsb); //cluster 1
       cmd.push_back(msb); //cluster 0
 
@@ -546,14 +546,14 @@ namespace esphome
       if (clusterId == ZCLHelper::ClusterIds::on_off_cluster)
       {
 
-        ESP_LOGD(MQTT_Receive_TAG, "ON/OFF action %d", action);
+        ESP_LOGD(MQTT_RECEIVE_TAG, "ON/OFF action %d", action);
         cmd.push_back(0x01);        //FrameControl
         cmd.push_back(transNumber); //Trans
         cmd.push_back(action);      //  0x00 OFF, 0x01 ON, 0x02 Toggle
       }
       if (clusterId == ZCLHelper::ClusterIds::level_control)
       {
-        ESP_LOGD(MQTT_Receive_TAG, "level action %d", brightness);
+        ESP_LOGD(MQTT_RECEIVE_TAG, "level action %d", brightness);
         cmd.push_back(0x01);        //FrameControl
         cmd.push_back(transNumber); //Trans
         cmd.push_back(0x00);        //move to level command - 0x00
@@ -574,7 +574,7 @@ namespace esphome
 
         lsb = color_temp;
         msb = color_temp >> 8;
-        ESP_LOGD(MQTT_Receive_TAG, "color action %d %d", lsb, msb);
+        ESP_LOGD(MQTT_RECEIVE_TAG, "color action %d %d", lsb, msb);
         //max 65535 Mired => 15K
         //min 0 Mired
         cmd.push_back(lsb); //Color Temperature-Minimum Mireds
@@ -583,17 +583,17 @@ namespace esphome
         cmd.push_back(msb); //Color Temperature-Maximum Mireds
       }
 
-      uint8_t fcs = ZCLHelper::CountFCS(cmd);
+      uint8_t fcs = ZCLHelper::count_fcs(cmd);
       cmd.push_back(fcs);
 
       ZNPCommand dataReq(cmd, 15 + datalen, {0xfe, 0x01, 0x64, 0x01, 0x00, 0x64}, 6);
       send_cmd_and_wait_for_response(dataReq, {});
 
-      ESP_LOGD(MQTT_Receive_TAG, "sending data req: ");
-      ESP_LOGD(MQTT_Receive_TAG, "to: %s, action: %d ", dstAddr.c_str(), action);
+      ESP_LOGD(MQTT_RECEIVE_TAG, "sending data req: ");
+      ESP_LOGD(MQTT_RECEIVE_TAG, "to: %s, action: %d ", dstAddr.c_str(), action);
     }
 
-    void zcl_mqtt_bridge::check_ZCL_cmd(ZCluster *cluster, std::vector<uint8_t> response)
+    void ZclMqttBridge::check_ZCL_cmd(ZCluster *cluster, std::vector<uint8_t> response)
     {
       Command cmd;
       Attribute attrib;
@@ -606,7 +606,7 @@ namespace esphome
         {
           datalen = response[20];
           std::vector<uint8_t> data(response.begin() + 21, response.begin() + 21 + datalen);
-          cluster->srcAddress = (ZCLHelper::n2hexstr(response[9]) + ZCLHelper::n2hexstr(response[8])).c_str(); //MSB
+          cluster->src_address = (ZCLHelper::n2hexstr(response[9]) + ZCLHelper::n2hexstr(response[8])).c_str(); //MSB
           uint8_t srcEP = response[10];                                                                        //difers left or right btn
 
           if (response[6] == 0x12 && response[7] == 0x00) // MultiState Input cluster
@@ -628,7 +628,7 @@ namespace esphome
                   {
                     attrib.type = ZCLHelper::DataTypes::uint16;
                     attrib.value = (ZCLHelper::n2hexstr(data[7]) + ZCLHelper::n2hexstr(data[6]));
-                    ESP_LOGD(UART_Receive_TAG, "Attrib value: %s", attrib.value.c_str());
+                    ESP_LOGD(UART_RECEIVE_TAG, "Attrib value: %s", attrib.value.c_str());
                     cluster->attributes.push_back(attrib);
                   }
                 }
@@ -638,7 +638,7 @@ namespace esphome
 
           if (response[6] == 0x00 && response[7] == 0x00) // basic cluster
           {
-            ESP_LOGD(MQTT_Receive_TAG, "basic cluster: ");
+            ESP_LOGD(MQTT_RECEIVE_TAG, "basic cluster: ");
             cluster->id = ZCLHelper::ClusterIds::basic;
             if (data[0] == 0x18) //profileWide
             {
@@ -654,7 +654,7 @@ namespace esphome
                   i++;
                 }
                 attrib.value = std::string(name.begin(), name.end());
-                ESP_LOGD(MQTT_Receive_TAG, "Attrib dev name: %s", attrib.value.c_str());
+                ESP_LOGD(MQTT_RECEIVE_TAG, "Attrib dev name: %s", attrib.value.c_str());
                 cluster->attributes.push_back(attrib);
 
                 if (data[i + 1] == 0x00 && data[i] == 0x01) //version
@@ -663,7 +663,7 @@ namespace esphome
                   a2.id = ZCLHelper::Attributes::app_version;
                   a2.type = static_cast<ZCLHelper::DataTypes>(data[i + 2]);
                   a2.value = ZCLHelper::n2hexstr(data[i + 3]);
-                  ESP_LOGD(MQTT_Receive_TAG, "Attrib version: %s", a2.value.c_str());
+                  ESP_LOGD(MQTT_RECEIVE_TAG, "Attrib version: %s", a2.value.c_str());
 
                   cluster->attributes.push_back(a2);
                 }
@@ -835,7 +835,7 @@ namespace esphome
       }   //size >21
     }
 
-    void zcl_mqtt_bridge::publish_component_config(std::string modelName, std::string srcAddress)
+    void ZclMqttBridge::publish_component_config(std::string modelName, std::string srcAddress)
     {
       std::string component = "";
       if (modelName.find("plug") != std::string::npos)
@@ -852,7 +852,7 @@ namespace esphome
                              r["opt"] = true;
                            });
 
-        this->subscribe(cmdTopic, &zcl_mqtt_bridge::on_message);
+        this->subscribe(cmdTopic, &ZclMqttBridge::on_message);
       }
       else if (modelName.find("light") != std::string::npos)
       {
@@ -881,7 +881,7 @@ namespace esphome
         //   "color_temp": true,
         //   "opt": true
         // }
-        this->subscribe_json(cmdTopic, &zcl_mqtt_bridge::on_json_message);
+        this->subscribe_json(cmdTopic, &ZclMqttBridge::on_json_message);
       }
       else if (modelName.find("cube") != std::string::npos)
       {
@@ -1011,7 +1011,7 @@ namespace esphome
                              r["state_topic"] = "homeassistant/" + component + "/" + srcAddress + "t/state";
                            });
       }
-      ESP_LOGD(MQTT_Receive_TAG, "homeassistant/%s/%s/config", component.c_str(), srcAddress.c_str());
+      ESP_LOGD(MQTT_RECEIVE_TAG, "homeassistant/%s/%s/config", component.c_str(), srcAddress.c_str());
     }
   } // namespace zcl_mqtt
 } // namespace esphome
