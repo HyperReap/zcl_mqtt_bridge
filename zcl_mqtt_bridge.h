@@ -229,6 +229,8 @@ namespace esphome
             vector<Attribute> attributes;
             vector<Command> commands;
             std::string name;
+            // uint8_t dst_endpoint;
+            // uint8_t src_endpoint;
         };
 
         /*
