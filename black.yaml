@@ -8,8 +8,8 @@ esphome:
     - .\src\zcl_mqtt_bridge.h
 
 wifi:
-  ssid: "XUrX"
-  password: "0102030507"
+  ssid: "mywifi"
+  password: "mywifipwd"
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -34,7 +34,7 @@ mqtt:
   broker: 10.0.0.95
   id: "mqttClient"
   username: homeassistant
-  password: ood8buu3riHie1iivohB9theesheiZoayoghohsi3voosii5cai9iu8taeCealae
+  password: mymqttpwd
 
   port: 1883
 
