@@ -4,8 +4,8 @@ esphome:
   board: esp32doit-devkit-v1
 
   includes:
-    - uart_cc2530\src\zcl_mqtt_bridge.cpp
-    - uart_cc2530\src\zcl_mqtt_bridge.h
+    - .\src\zcl_mqtt_bridge.cpp
+    - .\src\zcl_mqtt_bridge.h
 
 wifi:
   ssid: "XUrX"
@@ -58,7 +58,7 @@ uart:
   
 custom_component:
 - lambda: |-
-    auto my_custom = new zcl_mqtt::zcl_mqtt_bridge(id(cc2530_UART));
+    auto my_custom = new zcl_mqtt::ZclMqttBridge(id(cc2530_UART));
     App.register_component(my_custom);
     return {my_custom};
 
@@ -67,6 +67,7 @@ binary_sensor:
  
   - platform: gpio
     name: " UTIL_GET_NV_INFO"
+    internal: true
     pin:
       number: 23
       inverted: True
@@ -87,10 +88,10 @@ switch:
       inverted: yes
 
     on_turn_on :
-      - logger.log: join-29
+      - logger.log: join-perma
       - uart.write:
           id: "cc2530_UART"
-          data: [0xFE,0x03,0x26,0x08,0xFC,0xFF,0x1d,0x33]
+          data: [0xFE,0x03,0x26,0x08,0xFC,0xFF,0xff,0xd1]
     on_turn_off:
       - logger.log: join-0
       - uart.write:
