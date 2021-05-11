@@ -7,10 +7,13 @@ This component shall be integrated in time in ESPHome. However for now it must b
 
 ZclMqttBridge should work on ESP32 as well as ESP8266, though was tested only on ESP32.
 
+
+Config:
+in your config file, you must redefine wifi, mqtt and uart tags according to what you are using.
+
 ESP32 must be connected to cc2530 via UART interface.
 cc2530 shall have FW useable for UART communication, in this repository you can find FW I used (cc2530FW.hex).
 
-Config:
 | ESP32 | CC2530 |
 | ------- | ------- |
 | RX   |   P0.3 |
@@ -29,7 +32,7 @@ Then after permiting joining devices - using switch 'PermitJoiningReq' - you can
 
 
 
-
+Files Description:
 zcl_mqtt_bridge.cpp contains the class for new ESPHome component (ZclMqttBridge).
 zcl_mqtt_bridge.h cotains helpfull functions and classes, for easier programming.
 black.yaml is ESPHome config file, containing all components
