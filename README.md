@@ -9,6 +9,7 @@ ZclMqttBridge should work on ESP32 as well as ESP8266, though was tested only on
 
 
 Config:
+
 in your config file, you must redefine wifi, mqtt and uart tags according to what you are using.
 
 ESP32 must be connected to cc2530 via UART interface.
@@ -26,6 +27,7 @@ cc2530 shall have FW useable for UART communication, in this repository you can 
 
 
 USE:
+
 After connecting ESP32 to electric nwk, you should wait about 1 minute to let the component fully initialize.
 Then after permiting joining devices - using switch 'PermitJoiningReq' - you can start creating your new IoT nwk.
 
