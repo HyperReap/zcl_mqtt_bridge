@@ -15,6 +15,9 @@ in your config file, you must redefine wifi, mqtt and uart tags according to wha
 ESP32 must be connected to cc2530 via UART interface.
 cc2530 shall have FW useable for UART communication, in this repository you can find FW I used (cc2530FW.hex).
 
+
+Connecting ESP & CC2530
+
 | ESP32 | CC2530 |
 | ------- | ------- |
 | RX   |   P0.3 |
@@ -43,4 +46,5 @@ cc2530FW.hex is FW used for cc2530 board
 
 
 ---------------- WORK IN PROGRESS --------------------
+
 ------------ FEEL FREE TO CONTRIBUTE ----------------
