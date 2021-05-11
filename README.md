@@ -35,10 +35,12 @@ Then after permiting joining devices - using switch 'PermitJoiningReq' - you can
 
 
 Files Description:
+
 zcl_mqtt_bridge.cpp contains the class for new ESPHome component (ZclMqttBridge).
 zcl_mqtt_bridge.h cotains helpfull functions and classes, for easier programming.
 black.yaml is ESPHome config file, containing all components
 prototypeFW.hex is FW used for cc2530 board
 
 
-WORK IN PROGRESS
+---------------- WORK IN PROGRESS --------------------
+------------ FEEL FREE TO CONTRIBUTE ----------------
