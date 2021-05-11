@@ -29,7 +29,7 @@ Connecting ESP & CC2530
 
 
 
-USE:
+Use:
 
 After connecting ESP32 to electric nwk, you should wait about 1 minute to let the component fully initialize.
 Then after permiting joining devices - using switch 'PermitJoiningReq' - you can start creating your new IoT nwk.
