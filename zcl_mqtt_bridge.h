@@ -225,7 +225,7 @@ namespace esphome
         {
         public:
             ZCLHelper::ClusterIds id; //2 bytes
-            std::string src_address;   //2bytes
+            std::string src_address;  //2bytes
             vector<Attribute> attributes;
             vector<Command> commands;
             std::string name;
@@ -317,8 +317,8 @@ provision for retransmission of
                 while (millis() < 7500) //time for letting cc2530 init
                     NOP();
 
-                zcl_mqtt_bridge_init();
-                boot();
+                this->zcl_mqtt_bridge_init();
+                this->boot();
 
                 //used for naming components, so with more bridges it would be still unique
                 //if only using 1 coordinator, can be commented down
@@ -327,7 +327,7 @@ provision for retransmission of
 
             void loop() override
             {
-                receive();
+                this->receive();
             }
 
         private:
