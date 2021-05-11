@@ -11,13 +11,13 @@ ESP32 must be connected to cc2530 via UART interface.
 cc2530 shall have FW useable for UART communication, in this repository you can find FW I used (cc2530FW.hex).
 
 Config:
-|ESP32 | CC2530 |
---------------
-|RX   |   P0.3 |
-|TX   |   P0.2 |
-|3v3  |   VCC  |
-|GND  |   GND  |
-|GND  |  P2.0(CFG1) |
+| ESP32 | CC2530 |
+| ------- | ------- |
+| RX   |   P0.3 |
+| TX   |   P0.2 |
+| 3v3  |   VCC  |
+| GND  |   GND  |
+| GND  |  P2.0(CFG1) |
 
 
 
