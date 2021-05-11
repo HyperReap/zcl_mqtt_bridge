@@ -12,10 +12,9 @@ namespace esphome
     const char *INIT_COMMANDS_TAG = "INIT Commands";
     const char *DEVICE_JOIN_TAG = "INIT Commands";
     const char *DEVICE_LEAVE_TAG = "INIT Commands";
-    const unsigned CMD0_POS = 2;
-    const unsigned CMD1_POS = 2;
+    const int CMD0_POS = 2;
+    const int CMD1_POS = 3;
     const unsigned DELAY = 500000;
-
 
     void ZclMqttBridge::on_message(const std::string &topic, const std::string &payload)
     {
@@ -88,7 +87,7 @@ namespace esphome
       ESP_LOGD(UART_RECEIVE_TAG, "received bytes : 0x%s", resp.c_str());
 
       if (this->check_AF_INCOMING(response)) //most common incoming messages so its first for optimalization
-        return; 
+        return;
       if (this->check_join_device(response))
         return;
       if (this->check_leave_device(response))
@@ -187,37 +186,47 @@ namespace esphome
     {
 
       // 39 30 65 63 6e 61 69 6c 6c 41 65 65 42 67 69 5a
-      std::vector<uint8_t> nwk_key = {0x5A, 0x69, 0x67, 0x42, 0x65, 0x65, 0x41, 0x6C, 0x6C, 0x69, 0x61, 0x6E, 0x63, 0x65, 0x30, 0x39};        //ZigBeeAlliance09
+      std::vector<uint8_t> nwk_key = {0x5A, 0x69, 0x67, 0x42, 0x65, 0x65, 0x41, 0x6C, 0x6C, 0x69, 0x61, 0x6E, 0x63, 0x65, 0x30, 0x39};         //ZigBeeAlliance09
       std::vector<uint8_t> nwk_key_reverse = {0x39, 0x30, 0x65, 0x63, 0x6e, 0x61, 0x69, 0x6c, 0x6c, 0x41, 0x65, 0x65, 0x42, 0x67, 0x69, 0x5a}; //ZigBeeAlliance09
       //ID 257 for Zstack 1.2
       //ID 273 for < Zstack 3.0.x
       //ID 4 for > Zstack 3.0.x
       std::vector<uint8_t> TC_link_key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x5a, 0x69, 0x67, 0x42, 0x65, 0x65, 0x41, 0x6c,
-                                        0x6c, 0x69, 0x61, 0x6e, 0x63, 0x65, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //ZigBeeAlliance09
+                                          0x6c, 0x69, 0x61, 0x6e, 0x63, 0x65, 0x30, 0x39, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //ZigBeeAlliance09
 
       std::vector<uint8_t> response = {};
       std::vector<uint8_t> writeconfig_expected_rsp = {0xFE, 0x01, 0x66, 0x09, 0x00, 0x6E};
 
       //check GET_NV_INFo if key is the same as NwkKey, if so, skip init
-      ZNPCommand get_NV_info({0xfe, 0x00, 0x27, 0x01, 0x26}, 5, {}, 0);
-      delayMicroseconds(DELAY * 10);
-      this->write_command(get_NV_info.command, get_NV_info.command_length);
+      ZNPCommand reset({0xfe, 0x01, 0x41, 0x00, 0x00, 0x40}, 6, {0xfe, 0x06, 0x41, 0x80, 0x02, 0x02, 0x00, 0x02, 0x05, 0x00, 0xC0}, 11);
 
+      ESP_LOGD(INIT_COMMANDS_TAG, "reset-Soft");
+      this->send_cmd_and_wait_for_response(reset, response);
+
+      delayMicroseconds(DELAY);
+      ZNPCommand get_NV_info({0xfe, 0x00, 0x27, 0x01, 0x26}, 5, {}, 0);
+      this->write_command(get_NV_info.command, get_NV_info.command_length);
+      delayMicroseconds(DELAY);
+
+      std::vector<uint8_t> rsp;
+      ;
       uint8_t byte;
       while (this->available())
       {
         byte = this->read();
-        response.push_back(byte);
+        rsp.push_back(byte);
       }
-
-      std::vector<uint8_t> key_from_NV_info(response.begin() + 20, response.end() - 1);
-      if (key_from_NV_info == nwk_key)
+      if (!rsp.empty())
       {
-        ESP_LOGD(INIT_COMMANDS_TAG, "Key are equal");
-        return;
-      }
 
-      ZNPCommand reset({0xfe, 0x01, 0x41, 0x00, 0x00, 0x40}, 6, {0xfe, 0x06, 0x41, 0x80, 0x02, 0x02, 0x00, 0x02, 0x05, 0x00, 0xC0}, 11);
+          ESP_LOGD(INIT_COMMANDS_TAG, "Keys Compare");
+        std::vector<uint8_t> key_from_NV_info(rsp.begin() + 20, rsp.begin() + 36);
+        if (key_from_NV_info == nwk_key)
+        {
+          ESP_LOGD(INIT_COMMANDS_TAG, "Keys are equal");
+          return;
+        }
+      }
 
       ZNPCommand config_startup_delete_NV_opt({0xfe, 0x05, 0x21, 0x09, 0x00, 0x03, 0x00, 0x01, 0x03, 0x2c}, 10, writeconfig_expected_rsp, 6);
       ZNPCommand config_startup_opt({0xfe, 0x05, 0x21, 0x09, 0x00, 0x03, 0x00, 0x01, 0x02, 0x2d}, 10, writeconfig_expected_rsp, 6);
@@ -274,18 +283,18 @@ namespace esphome
 
     void ZclMqttBridge::send_cmd_and_wait_for_response(ZNPCommand cmd, std::vector<uint8_t> response)
     {
-      bool waitForResponse = this->write_command(cmd.command, cmd.command_length);
+      bool wait_for_response = this->write_command(cmd.command, cmd.command_length);
       delayMicroseconds(DELAY);
 
-      while (waitForResponse)
+      while (wait_for_response)
       {
-        waitForResponse = this->receive_response(response, cmd.response_length);
+        wait_for_response = this->receive_response(response, cmd.response_length);
       }
     }
 
     bool ZclMqttBridge::write_command(std::vector<uint8_t> cmd, int length)
     {
-      bool waitForResponse = true;
+      bool wait_for_response = true;
       if (!cmd.empty())
       {
         string log = "";
@@ -294,21 +303,20 @@ namespace esphome
 
         ESP_LOGD(UART_WRITE_TAG, "write : 0x%s", log.c_str());
       }
-
       this->write_array(&cmd[0], sizeof(uint8_t) * length);
-      return waitForResponse;
+      return wait_for_response;
     }
 
     //TODO::
     bool ZclMqttBridge::receive_response(std::vector<uint8_t> exp_rsp, int length)
     {
-      bool waitForResponse = false;
+      bool wait_for_response = false;
       this->receive();
       delayMicroseconds(DELAY / 2);
-      return waitForResponse;
+      return wait_for_response;
       // while (available())
       // {
-      //   ESP_LOGI(UART_RECEIVE_TAG, "RESPONSE");
+      //   ESP_LOGD(UART_RECEIVE_TAG, "RESPONSE");
       //   this->read_array(&exp_rsp[0], sizeof(uint8_t) * length);
       //   return false; //no nned to wait anymore
       // }
@@ -316,37 +324,41 @@ namespace esphome
 
     bool ZclMqttBridge::check_join_device(std::vector<uint8_t> response)
     {
-
-      if (response.size() == 16) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0B), FCS
+      if (response.size() >= 17) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0B), FCS
       {
         if (response[CMD0_POS] == 0x45 && response[CMD1_POS] == 0xC1) //ZDO_END_DEVICE_ANNCE
         {
           std::__cxx11::string nwk_address = to_string(response[5]); //MSB
           nwk_address += to_string(response[4]);
-          ESP_LOGD(DEVICE_JOIN_TAG, "new Device address: %s", nwk_address.c_str());
+          ESP_LOGI(DEVICE_JOIN_TAG, "new Device address: %s", nwk_address.c_str());
+          return true;
         }
       }
+      return false;
     }
 
     bool ZclMqttBridge::check_leave_device(std::vector<uint8_t> response)
     {
-      if (response.size() == 18) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0D), FCS
+      if (response.size() >= 18) // 0xFE, LEN(ofPayload), CMD0 CMD1,Payload(min 0x0D), FCS
       {
+        ESP_LOGD(DEVICE_LEAVE_TAG, "leave rsp cmd %x %x", response[CMD0_POS], response[CMD1_POS]);
         if (response[CMD0_POS] == 0x45 && response[CMD1_POS] == 0xC9) //ZDO_LEAVE_IND
         {
           std::__cxx11::string nwk_address = ZCLHelper::n2hexstr(response[5]); //MSB
           nwk_address += ZCLHelper::n2hexstr(response[4]);
-          ESP_LOGD(DEVICE_LEAVE_TAG, "LEAVE - Device address: %s", nwk_address.c_str());
+          ESP_LOGI(DEVICE_LEAVE_TAG, "LEAVE - Device address: %s", nwk_address.c_str());
 
           //TODO LifeHack - needs better solution
-          this->publish("homeassistant/switch/" + App.get_name() + nwk_address + "/config", "");
-          this->publish("homeassistant/light/" + App.get_name() + nwk_address + "/config", "");
-          this->publish("homeassistant/binary_sensor/" + App.get_name() + nwk_address + "/config", "");
-          this->publish("homeassistant/sensor/" + App.get_name() + nwk_address + "t/config", "");
-          this->publish("homeassistant/sensor/" + App.get_name() + nwk_address + "h/config", "");
-          this->publish("homeassistant/sensor/" + App.get_name() + nwk_address + "p/config", "");
+          this->publish("homeassistant/switch/" + this->application_name + nwk_address + "/config", "");
+          this->publish("homeassistant/light/" + this->application_name + nwk_address + "/config", "");
+          this->publish("homeassistant/binary_sensor/" + this->application_name + nwk_address + "/config", "");
+          this->publish("homeassistant/sensor/" + this->application_name + nwk_address + "t/config", "");
+          this->publish("homeassistant/sensor/" + this->application_name + nwk_address + "h/config", "");
+          this->publish("homeassistant/sensor/" + this->application_name + nwk_address + "p/config", "");
+          return true;
         }
       }
+      return false;
     }
 
     bool ZclMqttBridge::check_AF_INCOMING(std::vector<uint8_t> response)
@@ -500,7 +512,7 @@ namespace esphome
         return true;
       }
 
-      return false;
+      return true;
     }
 
     bool ZclMqttBridge::send_AF_DATA_REQUEST(string dst_address, int cluster_id, uint8_t trans_number, uint8_t action, uint8_t brightness, int color_temp)
@@ -529,7 +541,7 @@ namespace esphome
       cmd.push_back(msb);
       cmd.push_back(1); //dst Endpoint
       cmd.push_back(1); //src Endpoint
-      
+
       int cl = cluster_id;
       lsb = cl;
       msb = cl >> 8;
@@ -547,16 +559,16 @@ namespace esphome
       {
 
         ESP_LOGD(MQTT_RECEIVE_TAG, "ON/OFF action %d", action);
-        cmd.push_back(0x01);        //FrameControl
+        cmd.push_back(0x01);         //FrameControl
         cmd.push_back(trans_number); //Trans
-        cmd.push_back(action);      //  0x00 OFF, 0x01 ON, 0x02 Toggle
+        cmd.push_back(action);       //  0x00 OFF, 0x01 ON, 0x02 Toggle
       }
       if (cluster_id == ZCLHelper::ClusterIds::level_control)
       {
         ESP_LOGD(MQTT_RECEIVE_TAG, "level action %d", brightness);
-        cmd.push_back(0x01);        //FrameControl
+        cmd.push_back(0x01);         //FrameControl
         cmd.push_back(trans_number); //Trans
-        cmd.push_back(0x00);        //move to level command - 0x00
+        cmd.push_back(0x00);         //move to level command - 0x00
 
         cmd.push_back(brightness); //level
         cmd.push_back(0x3c);       //Transition time 6 seconds LSB
@@ -564,9 +576,9 @@ namespace esphome
       }
       if (cluster_id == ZCLHelper::ClusterIds::color_control)
       {
-        cmd.push_back(0x01);        //FrameControl
+        cmd.push_back(0x01);         //FrameControl
         cmd.push_back(trans_number); //Trans
-        cmd.push_back(0x4b);        //Move Color Temperature
+        cmd.push_back(0x4b);         //Move Color Temperature
 
         cmd.push_back(0x03); //move mode - 0x03 DOWN
         cmd.push_back(0x05); //rate
@@ -607,7 +619,7 @@ namespace esphome
           datalen = response[20];
           std::vector<uint8_t> data(response.begin() + 21, response.begin() + 21 + datalen);
           cluster->src_address = (ZCLHelper::n2hexstr(response[9]) + ZCLHelper::n2hexstr(response[8])).c_str(); //MSB
-          uint8_t src_endpoint = response[10];                                                                        //difers left or right btn
+          uint8_t src_endpoint = response[10];                                                                  //difers left or right btn
 
           if (response[6] == 0x12 && response[7] == 0x00) // MultiState Input cluster
           {
@@ -893,7 +905,7 @@ namespace esphome
                              r["unique_id"] = src_address;
                            });
       }
-      else if (model_name.find("remote.b1") != std::string::npos)
+      else if (model_name.find("remote") != std::string::npos)
       {
         component = "switch";
         this->publish_json("homeassistant/" + component + "/" + src_address + "/config",
